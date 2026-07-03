@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClosetFlip &mdash; What's it actually worth?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --ink-900:#14161A;
+    --ink-800:#1B1E24;
+    --ink-700:#23262E;
+    --ink-600:#2E323C;
+    --hairline:#383C46;
+    --kraft:#E4D9BE;
+    --kraft-dark:#D2C4A0;
+    --brass:#C6992F;
+    --brass-bright:#E0B44A;
+    --stamp-red:#A63A2E;
+    --stamp-green:#4C7A54;
+    --text-hi:#F2EFE9;
+    --text-lo:#9CA0AA;
+    --text-faint:#666B76;
+    --text-ink:#2A241C;
+    --text-ink-lo:#5B5340;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink-900);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -5%, rgba(198,153,47,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(76,122,84,0.07), transparent 55%);
+    color:var(--text-hi);
+    font-family:'IBM Plex Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+  ::selection{background:var(--brass);color:var(--ink-900);}
+
+  /* ---------- HEADER ---------- */
+  header{
+    border-bottom:1px solid var(--hairline);
+    position:sticky;top:0;z-index:50;
+    background:rgba(20,22,26,0.92);
+    backdrop-filter:blur(8px);
+  }
+  .header-inner{display:flex;align-items:center;justify-content:space-between;padding:18px 0;}
+  .wordmark{
+    font-family:'Big Shoulders Display',sans-serif;
+    font-weight:800;font-size:24px;letter-spacing:0.5px;
+    color:var(--text-hi);text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;
+  }
+  .wordmark .dot{color:var(--brass);}
+  .punchcard{
+    display:flex;align-items:center;gap:10px;
+    background:var(--ink-800);border:1px solid var(--hairline);
+    border-radius:999px;padding:6px 14px 6px 8px;
+  }
+  .punchcard .holes{display:flex;gap:5px;}
+  .hole{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--brass);}
+  .hole.used{background:var(--brass);}
+  .hole.locked{border-color:var(--text-faint);}
+  .punchcard .label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-lo);letter-spacing:0.5px;text-transform:uppercase;}
+
+  /* ---------- HERO ---------- */
+  .hero{padding:88px 0 64px;position:relative;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:2px;
+    color:var(--brass-bright);text-transform:uppercase;margin-bottom:18px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:'';width:22px;height:1px;background:var(--brass);}
+  h1{
+    font-family:'Big Shoulders Display',sans-serif;
+    font-weight:800;
+    font-size:clamp(42px,7vw,84px);
+    line-height:0.92;
+    letter-spacing:0.5px;
+    margin:0 0 22px;
+    text-transform:uppercase;
+    max-width:820px;
+  }
+  h1 .stamp-word{
+    color:var(--ink-900);
+    background:var(--brass-bright);
+    padding:0 12px;
+    display:inline-block;
+    transform:rotate(-1.2deg);
+    box-shadow:3px 3px 0 rgba(0,0,0,0.25);
+  }
+  .hero p.sub{
+    font-size:18px;line-height:1.6;color:var(--text-lo);max-width:560px;margin:0 0 36px;
+  }
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+  .btn{
+    font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:15px;
+    padding:14px 26px;border-radius:6px;border:none;cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--brass-bright);color:var(--ink-900);}
+  .btn-primary:hover{box-shadow:0 4px 18px rgba(224,180,74,0.35);}
+  .btn-ghost{background:transparent;color:var(--text-hi);border:1px solid var(--hairline);}
+  .btn-ghost:hover{border-color:var(--text-lo);}
+  .hero-note{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-faint);margin-top:14px;}
+
+  /* ---------- HOW IT WORKS ---------- */
+  .steps{padding:50px 0 70px;border-top:1px solid var(--hairline);}
+  .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:30px;}
+  .step{padding:22px 4px 0;border-top:2px solid var(--hairline);}
+  .step .num{
+    font-family:'IBM Plex Mono',monospace;color:var(--brass);font-size:13px;margin-bottom:10px;display:block;
+  }
+  .step h3{font-family:'Big Shoulders Display',sans-serif;font-size:22px;text-transform:uppercase;margin:0 0 8px;letter-spacing:0.3px;}
+  .step p{color:var(--text-lo);font-size:14.5px;line-height:1.55;margin:0;}
+
+  /* ---------- UPLOAD ---------- */
+  .intake{padding:20px 0 60px;}
+  .intake-panel{
+    border:1.5px dashed var(--hairline);
+    border-radius:14px;
+    padding:48px 32px;
+    text-align:center;
+    background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);
+    position:relative;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .intake-panel.dragover{border-color:var(--brass);background:rgba(198,153,47,0.06);}
+  .intake-panel .corner{position:absolute;width:16px;height:16px;border:2px solid var(--brass);opacity:0.6;}
+  .corner.tl{top:10px;left:10px;border-right:none;border-bottom:none;}
+  .corner.tr{top:10px;right:10px;border-left:none;border-bottom:none;}
+  .corner.bl{bottom:10px;left:10px;border-right:none;border-top:none;}
+  .corner.br{bottom:10px;right:10px;border-left:none;border-top:none;}
+  .intake-icon{font-size:34px;margin-bottom:14px;opacity:0.9;}
+  .intake-panel h3{font-family:'Big Shoulders Display',sans-serif;font-size:26px;text-transform:uppercase;margin:0 0 8px;}
+  .intake-panel p{color:var(--text-lo);font-size:14.5px;margin:0 0 22px;}
+  input[type=file]{display:none;}
+
+  .queue{margin-top:36px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;}
+
+  /* ---------- TAG CARD (signature element) ---------- */
+  .tag{
+    background:var(--kraft);
+    color:var(--text-ink);
+    border-radius:4px;
+    padding:16px 16px 18px;
+    position:relative;
+    box-shadow:0 10px 24px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(0,0,0,0.06);
+    transform:rotate(var(--tilt,-0.6deg));
+  }
+  .tag::before{
+    content:'';position:absolute;top:12px;left:12px;
+    width:12px;height:12px;border-radius:50%;
+    background:var(--ink-900);
+    box-shadow:0 0 0 2px var(--kraft-dark), inset 0 1px 2px rgba(0,0,0,0.6);
+  }
+  .tag .thumb{
+    width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:3px;
+    margin-top:20px;filter:sepia(0.08) contrast(1.02);
+    border:1px solid rgba(0,0,0,0.15);
+  }
+  .tag .filename{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-ink-lo);
+    margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .tag .status-row{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:8px;}
+  .tag .status{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-ink-lo);}
+  .mini-btn{
+    font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12.5px;
+    background:var(--ink-900);color:var(--text-hi);border:none;border-radius:4px;
+    padding:8px 12px;cursor:pointer;
+  }
+  .mini-btn:hover{background:#000;}
+  .mini-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .mini-remove{
+    position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text-ink-lo);
+    font-size:16px;cursor:pointer;line-height:1;padding:4px;
+  }
+  .mini-remove:hover{color:var(--stamp-red);}
+
+  .spinner{
+    width:14px;height:14px;border-radius:50%;
+    border:2px solid rgba(42,36,28,0.25);border-top-color:var(--text-ink);
+    animation:spin .7s linear infinite;display:inline-block;vertical-align:-2px;margin-right:6px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---------- RESULTS ---------- */
+  .results{padding:10px 0 80px;}
+  .results h2{
+    font-family:'Big Shoulders Display',sans-serif;font-size:32px;text-transform:uppercase;
+    border-top:1px solid var(--hairline);padding-top:36px;margin:20px 0 30px;
+  }
+  .result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:28px;}
+  .result-tag{
+    background:var(--kraft);color:var(--text-ink);border-radius:6px;
+    padding:0;overflow:hidden;
+    box-shadow:0 14px 34px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.06);
+  }
+  .result-head{display:flex;gap:14px;padding:18px 18px 14px;border-bottom:1px dashed rgba(42,36,28,0.25);}
+  .result-head img{width:76px;height:76px;object-fit:cover;border-radius:4px;border:1px solid rgba(0,0,0,0.15);}
+  .result-head .rh-text{flex:1;min-width:0;}
+  .result-head h3{font-family:'Big Shoulders Display',sans-serif;font-size:21px;text-transform:uppercase;margin:0 0 3px;line-height:1.05;}
+  .result-head .brand{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-ink-lo);}
+  .result-head .cond{
+    display:inline-block;margin-top:6px;font-size:10.5px;font-family:'IBM Plex Mono',monospace;
+    text-transform:uppercase;letter-spacing:0.5px;padding:2px 7px;border-radius:3px;
+    background:rgba(42,36,28,0.08);color:var(--text-ink-lo);
+  }
+  .value-block{padding:16px 18px;text-align:center;border-bottom:1px dashed rgba(42,36,28,0.25);}
+  .value-block .vlabel{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--text-ink-lo);}
+  .value-block .vrange{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:40px;color:var(--stamp-green);line-height:1.1;margin:4px 0;}
+  .value-block .vsuggest{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-ink);}
+  .confidence{
+    display:inline-flex;align-items:center;gap:5px;margin-top:8px;
+    font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;
+    padding:3px 8px;border-radius:3px;
+  }
+  .confidence.high{background:rgba(76,122,84,0.15);color:var(--stamp-green);}
+  .confidence.medium{background:rgba(198,153,47,0.18);color:#8a6a1f;}
+  .confidence.low{background:rgba(166,58,46,0.14);color:var(--stamp-red);}
+  .pricing-basis{font-size:12px;color:var(--text-ink-lo);line-height:1.5;margin:8px 18px 0;font-style:italic;}
+
+  .comps-list{display:flex;flex-direction:column;gap:7px;}
+  .comp-row{
+    display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:5px;
+    background:rgba(42,36,28,0.04);text-decoration:none;color:inherit;
+    transition:background .12s ease;
+  }
+  .comp-row:hover{background:rgba(42,36,28,0.09);}
+  .comp-plat{
+    font-family:'IBM Plex Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:0.4px;
+    background:var(--ink-900);color:var(--kraft);padding:3px 6px;border-radius:3px;flex-shrink:0;
+  }
+  .comp-title{font-size:12.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .comp-price{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;flex-shrink:0;}
+  .comp-status{
+    font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;flex-shrink:0;
+    color:var(--stamp-green);
+  }
+  .comp-status.active{color:var(--text-ink-lo);}
+  .comps-empty{font-size:12.5px;color:var(--text-ink-lo);font-style:italic;}
+
+  .section-block{padding:14px 18px;border-bottom:1px dashed rgba(42,36,28,0.25);}
+  .section-block:last-child{border-bottom:none;}
+  .section-block h4{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;
+    color:var(--text-ink-lo);margin:0 0 10px;display:flex;align-items:center;gap:6px;
+  }
+  .marketplaces{display:flex;flex-direction:column;gap:8px;}
+  .mk-row{
+    display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:start;
+    font-size:13.5px;padding:9px 10px;border-radius:5px;background:rgba(42,36,28,0.04);
+    position:relative;
+  }
+  .mk-row.best{background:rgba(76,122,84,0.12);box-shadow:inset 0 0 0 1px rgba(76,122,84,0.4);}
+  .mk-row .best-flag{
+    position:absolute;top:-8px;right:8px;background:var(--stamp-green);color:var(--kraft);
+    font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.5px;
+    padding:2px 6px;border-radius:3px;font-weight:600;
+  }
+  .mk-row .mk-name{font-weight:700;grid-column:1;}
+  .mk-row .mk-price{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:15px;grid-column:2;grid-row:1;text-align:right;}
+  .mk-row .mk-reason{color:var(--text-ink-lo);font-size:11.5px;grid-column:1;line-height:1.3;}
+  .mk-row .mk-net{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-ink-lo);grid-column:2;grid-row:2;text-align:right;white-space:nowrap;}
+
+  .risk-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;}
+  .risk-list li{
+    font-size:13px;line-height:1.4;padding-left:20px;position:relative;color:var(--text-ink);
+  }
+  .risk-list li::before{
+    content:'\26A0';position:absolute;left:0;top:0;color:var(--stamp-red);font-size:12px;
+  }
+
+  .deal-box{
+    background:rgba(76,122,84,0.08);border:1px solid rgba(76,122,84,0.3);border-radius:5px;padding:12px;
+  }
+  .deal-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;}
+  .deal-row .dv{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .deal-verdict{
+    margin-top:8px;padding-top:8px;border-top:1px dashed rgba(42,36,28,0.2);
+    font-size:12.5px;font-weight:600;color:var(--stamp-green);
+  }
+  .error-box{
+    background:rgba(166,58,46,0.1);border:1px solid rgba(166,58,46,0.35);border-radius:5px;
+    padding:12px;font-size:13px;color:var(--stamp-red);
+  }
+
+  /* ---------- PRICING / PAYWALL ---------- */
+  .pricing{padding:20px 0 90px;border-top:1px solid var(--hairline);}
+  .pricing h2{font-family:'Big Shoulders Display',sans-serif;font-size:32px;text-transform:uppercase;margin:36px 0 8px;}
+  .pricing p.lead{color:var(--text-lo);margin:0 0 34px;max-width:520px;}
+  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
+  .plan{
+    background:var(--ink-800);border:1px solid var(--hairline);border-radius:10px;padding:26px 22px;
+    display:flex;flex-direction:column;
+  }
+  .plan.featured{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass), 0 16px 32px rgba(198,153,47,0.12);}
+  .plan .ptag{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--brass-bright);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+  .plan h3{font-family:'Big Shoulders Display',sans-serif;font-size:24px;text-transform:uppercase;margin:0 0 4px;}
+  .plan .price{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;margin:8px 0 14px;}
+  .plan .price span{font-size:13px;color:var(--text-lo);font-weight:400;}
+  .plan ul{list-style:none;padding:0;margin:0 0 20px;flex:1;}
+  .plan li{font-size:13.5px;color:var(--text-lo);padding:6px 0;border-top:1px solid var(--hairline);}
+  .plan li:first-child{border-top:none;}
+  .plan .btn{width:100%;text-align:center;}
+
+  footer{border-top:1px solid var(--hairline);padding:30px 0 50px;}
+  footer p{color:var(--text-faint);font-size:12.5px;line-height:1.7;max-width:640px;font-family:'IBM Plex Mono',monospace;}
+  footer a{color:var(--text-lo);}
+
+  .empty-note{color:var(--text-faint);font-size:13.5px;font-family:'IBM Plex Mono',monospace;}
+
+  @media(max-width:760px){
+    .steps-grid{grid-template-columns:1fr;}
+    .plans{grid-template-columns:1fr;}
+    .header-inner{flex-wrap:wrap;gap:12px;}
+  }
+
+  /* ---------- AUTH ---------- */
+  .account-area{display:flex;align-items:center;gap:12px;}
+  .account-email{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-lo);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .btn-small{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;padding:9px 16px;border-radius:6px;cursor:pointer;border:1px solid var(--hairline);background:transparent;color:var(--text-hi);}
+  .btn-small:hover{border-color:var(--text-lo);}
+
+  .modal-backdrop{
+    display:none;position:fixed;inset:0;background:rgba(10,11,13,0.72);
+    z-index:100;align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal-box{
+    background:var(--ink-800);border:1px solid var(--hairline);border-radius:12px;
+    padding:30px 28px;max-width:380px;width:100%;position:relative;
+  }
+  .modal-box h3{font-family:'Big Shoulders Display',sans-serif;font-size:26px;text-transform:uppercase;margin:0 0 6px;}
+  .modal-box p.modal-sub{color:var(--text-lo);font-size:13.5px;margin:0 0 20px;}
+  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-lo);font-size:20px;cursor:pointer;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-lo);margin-bottom:6px;}
+  .field input{
+    width:100%;padding:11px 12px;border-radius:6px;border:1px solid var(--hairline);
+    background:var(--ink-900);color:var(--text-hi);font-family:'IBM Plex Sans',sans-serif;font-size:14px;
+  }
+  .field input:focus{outline:none;border-color:var(--brass);}
+  .modal-box .btn{width:100%;margin-top:6px;}
+  .modal-switch{margin-top:16px;font-size:13px;color:var(--text-lo);text-align:center;}
+  .modal-switch a{color:var(--brass-bright);cursor:pointer;text-decoration:underline;}
+  .modal-error{background:rgba(166,58,46,0.12);border:1px solid rgba(166,58,46,0.35);color:var(--stamp-red);
+    font-size:12.5px;padding:9px 11px;border-radius:5px;margin-bottom:14px;display:none;}
+  .modal-notice{background:rgba(76,122,84,0.12);border:1px solid rgba(76,122,84,0.35);color:var(--stamp-green);
+    font-size:12.5px;padding:9px 11px;border-radius:5px;margin-bottom:14px;display:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap header-inner">
+    <div class="wordmark">CLOSETFLIP<span class="dot">.</span></div>
+    <div class="account-area">
+      <div class="punchcard" id="punchcard" style="display:none;">
+        <div class="holes" id="holes"></div>
+        <span class="label" id="scanLabel"></span>
+      </div>
+      <div id="loggedOutControls">
+        <button class="btn-small" onclick="openAuthModal('signin')">Sign in</button>
+        <button class="btn-small" onclick="openAuthModal('signup')" style="margin-left:8px;">Sign up</button>
+      </div>
+      <div id="loggedInControls" style="display:none;align-items:center;gap:12px;">
+        <span class="account-email" id="accountEmail"></span>
+        <button class="btn-small" onclick="signOutUser()">Sign out</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="modal-backdrop" id="authModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeAuthModal()">&times;</button>
+    <h3 id="authTitle">Sign up</h3>
+    <p class="modal-sub" id="authSub">Create an account to start your 3 free scans.</p>
+    <div class="modal-error" id="authError"></div>
+    <div class="modal-notice" id="authNotice"></div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="authEmail" autocomplete="email" placeholder="you@example.com">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="authPassword" autocomplete="current-password" placeholder="At least 6 characters">
+    </div>
+    <button class="btn btn-primary" id="authSubmitBtn" onclick="submitAuth()">Create account</button>
+    <div class="modal-switch" id="authSwitch">
+      Already have an account? <a onclick="openAuthModal('signin')">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<section class="hero wrap">
+  <div class="eyebrow">Photo &rarr; appraisal in seconds</div>
+  <h1>What's it<br>actually <span class="stamp-word">worth?</span></h1>
+  <p class="sub">Upload photos of clothes you're thinking of selling. Get an honest value range, the best place to list each piece, what to check before you trust an offer, and which deal actually pays more.</p>
+  <div class="hero-cta">
+    <button class="btn btn-primary" onclick="requestUpload()">Upload a photo</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('howItWorks').scrollIntoView({behavior:'smooth'})">How it works</button>
+  </div>
+  <div class="hero-note">Sign up free &middot; 3 scans on us &middot; instant results</div>
+</section>
+
+<section class="steps wrap" id="howItWorks">
+  <div class="steps-grid">
+    <div class="step">
+      <span class="num">01</span>
+      <h3>Snap it</h3>
+      <p>A clear photo of the item &mdash; brand tag or label visible helps, but isn't required.</p>
+    </div>
+    <div class="step">
+      <span class="num">02</span>
+      <h3>We appraise it</h3>
+      <p>Category, condition, and a realistic resale value range based on what similar pieces actually sell for.</p>
+    </div>
+    <div class="step">
+      <span class="num">03</span>
+      <h3>You decide</h3>
+      <p>Best marketplace for this piece, red flags to check, and whether a quick cash offer beats listing it yourself.</p>
+    </div>
+  </div>
+</section>
+
+<section class="intake wrap">
+  <div class="intake-panel" id="dropZone">
+    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+    <div class="intake-icon">&#128248;</div>
+    <h3>Drop photos here</h3>
+    <p>or choose files from your device &middot; JPG or PNG</p>
+    <button class="btn btn-primary" onclick="requestUpload()">Choose photos</button>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+  </div>
+
+  <div class="queue" id="queue"></div>
+</section>
+
+<section class="results wrap" id="resultsSection" style="display:none;">
+  <h2>Appraisals</h2>
+  <div class="result-grid" id="resultGrid"></div>
+</section>
+
+<section class="pricing wrap" id="pricing">
+  <h2>Scans</h2>
+  <p class="lead">Your first 3 appraisals are free. After that, buy scans &mdash; bigger packs cost less per scan.</p>
+  <div class="plans">
+    <div class="plan">
+      <div class="ptag">Try it out</div>
+      <h3>20 Scans</h3>
+      <div class="price">$4.99<span>&nbsp;one-time</span></div>
+      <ul>
+        <li>20 item appraisals</li>
+        <li>Value range + best marketplace</li>
+        <li>Risk &amp; authenticity checklist</li>
+        <li>Never expires</li>
+      </ul>
+      <button class="btn btn-ghost" onclick="startCheckout('scans_20')">Buy scans</button>
+    </div>
+    <div class="plan featured">
+      <div class="ptag">Most popular</div>
+      <h3>100 Scans</h3>
+      <div class="price">$14.99<span>&nbsp;one-time</span></div>
+      <ul>
+        <li>100 item appraisals</li>
+        <li>Everything in 20 Scans</li>
+        <li>Priority processing</li>
+        <li>Never expires</li>
+      </ul>
+      <button class="btn btn-primary" onclick="startCheckout('scans_100')">Buy scans</button>
+    </div>
+    <div class="plan">
+      <div class="ptag">For resellers</div>
+      <h3>Unlimited</h3>
+      <div class="price">$49.99<span>&nbsp;/ month</span></div>
+      <ul>
+        <li>Unlimited appraisals</li>
+        <li>Everything in 100 Scans</li>
+        <li>Bulk upload &amp; batch export</li>
+        <li>Email support</li>
+      </ul>
+      <button class="btn btn-ghost" onclick="startCheckout('unlimited')">Start plan</button>
+    </div>
+  </div>
+</section>
+
+<footer class="wrap">
+  <p>
+    Accounts, scan balances, and payments are real. "Buy pack" / "Start plan" take you to a secure Stripe checkout, and your scan balance updates once payment is confirmed.<br><br>
+    Estimates are AI-generated from a single photo and typical marketplace pricing patterns &mdash; treat them as a starting point, not an appraisal guarantee. Always verify authenticity through official brand channels before paying for or listing a designer item.
+  </p>
+</footer>
+
+<script>
+// ====== CONFIG: fill these in from your Supabase project settings ======
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+// =========================================================================
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;
+let scanBalance = 0; // -1 means unlimited
+let queueItems = [];
+let itemCounter = 0;
+let pendingUploadClick = false;
+
+function renderPunchcard(){
+  const pc = document.getElementById('punchcard');
+  const holes = document.getElementById('holes');
+  const label = document.getElementById('scanLabel');
+  if(!currentUser){ pc.style.display = 'none'; return; }
+  pc.style.display = 'flex';
+  holes.innerHTML = '';
+  const displayTotal = scanBalance === -1 ? 8 : Math.max(scanBalance, 3);
+  const used = scanBalance === -1 ? 0 : Math.max(displayTotal - scanBalance, 0);
+  for(let i=0;i<displayTotal;i++){
+    const h = document.createElement('div');
+    h.className = 'hole' + (i < used ? ' used' : '');
+    holes.appendChild(h);
+  }
+  label.textContent = scanBalance === -1 ? 'Unlimited scans' : (scanBalance + ' scan' + (scanBalance===1?'':'s') + ' left');
+}
+
+function flashPunchcard(){
+  const pc = document.getElementById('punchcard');
+  pc.style.boxShadow = '0 0 0 2px var(--stamp-red)';
+  setTimeout(()=>{ pc.style.boxShadow = 'none'; }, 900);
+}
+
+/* ---------- AUTH ---------- */
+let authMode = 'signup';
+
+function openAuthModal(mode){
+  authMode = mode;
+  document.getElementById('authError').style.display = 'none';
+  document.getElementById('authNotice').style.display = 'none';
+  document.getElementById('authEmail').value = '';
+  document.getElementById('authPassword').value = '';
+  if(mode === 'signup'){
+    document.getElementById('authTitle').textContent = 'Sign up';
+    document.getElementById('authSub').textContent = 'Create an account to start your 3 free scans.';
+    document.getElementById('authSubmitBtn').textContent = 'Create account';
+    document.getElementById('authSwitch').innerHTML = 'Already have an account? <a onclick="openAuthModal(\'signin\')">Sign in</a>';
+  } else {
+    document.getElementById('authTitle').textContent = 'Sign in';
+    document.getElementById('authSub').textContent = 'Welcome back.';
+    document.getElementById('authSubmitBtn').textContent = 'Sign in';
+    document.getElementById('authSwitch').innerHTML = "Don't have an account? <a onclick=\"openAuthModal('signup')\">Sign up</a>";
+  }
+  document.getElementById('authModal').classList.add('open');
+}
+
+function closeAuthModal(){
+  document.getElementById('authModal').classList.remove('open');
+  pendingUploadClick = false;
+}
+
+async function submitAuth(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errBox = document.getElementById('authError');
+  const noticeBox = document.getElementById('authNotice');
+  errBox.style.display = 'none';
+  noticeBox.style.display = 'none';
+
+  if(!email || !password || password.length < 6){
+    errBox.textContent = 'Enter a valid email and a password of at least 6 characters.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  if(authMode === 'signup'){
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    if(error){
+      errBox.textContent = error.message;
+      errBox.style.display = 'block';
+      return;
+    }
+    if(data.session){
+      await onSignedIn(data.session);
+      closeAuthModal();
+    } else {
+      noticeBox.textContent = 'Check your email to confirm your account, then sign in.';
+      noticeBox.style.display = 'block';
+    }
+  } else {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if(error){
+      errBox.textContent = error.message;
+      errBox.style.display = 'block';
+      return;
+    }
+    await onSignedIn(data.session);
+    closeAuthModal();
+  }
+}
+
+async function signOutUser(){
+  await supabaseClient.auth.signOut();
+  currentUser = null;
+  scanBalance = 0;
+  document.getElementById('loggedOutControls').style.display = 'block';
+  document.getElementById('loggedInControls').style.display = 'none';
+  renderPunchcard();
+}
+
+async function onSignedIn(session){
+  currentUser = session.user;
+  document.getElementById('loggedOutControls').style.display = 'none';
+  document.getElementById('loggedInControls').style.display = 'flex';
+  document.getElementById('accountEmail').textContent = currentUser.email;
+  await fetchProfile();
+  if(pendingUploadClick){
+    pendingUploadClick = false;
+    document.getElementById('fileInput').click();
+  }
+}
+
+async function fetchProfile(){
+  if(!currentUser) return;
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('scan_balance')
+    .eq('id', currentUser.id)
+    .single();
+  if(!error && data){
+    scanBalance = data.scan_balance;
+  }
+  renderPunchcard();
+}
+
+async function initAuth(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(session){
+    await onSignedIn(session);
+  } else {
+    renderPunchcard();
+  }
+
+  // Handle return from Stripe checkout
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('checkout') === 'success'){
+    const note = document.createElement('p');
+    note.className = 'empty-note';
+    note.textContent = 'Payment received \u2014 updating your scan balance...';
+    document.getElementById('pricing').insertBefore(note, document.getElementById('pricing').querySelector('.plans'));
+    // Webhook may take a moment to land; poll a few times.
+    let tries = 0;
+    const poll = setInterval(async ()=>{
+      tries++;
+      await fetchProfile();
+      if(tries >= 6) clearInterval(poll);
+    }, 2000);
+    window.history.replaceState({}, '', window.location.pathname);
+  } else if(params.get('checkout') === 'cancelled'){
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+initAuth();
+
+/* ---------- CHECKOUT ---------- */
+async function startCheckout(plan){
+  if(!currentUser){
+    openAuthModal('signup');
+    return;
+  }
+  try{
+    const res = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan, userId: currentUser.id, email: currentUser.email })
+    });
+    const data = await res.json();
+    if(data.url){
+      window.location.href = data.url;
+    } else {
+      alert(data.error || 'Could not start checkout.');
+    }
+  }catch(err){
+    console.error(err);
+    alert('Could not start checkout. Please try again.');
+  }
+}
+
+/* ---------- UPLOAD / QUEUE ---------- */
+function requestUpload(){
+  if(!currentUser){
+    pendingUploadClick = true;
+    openAuthModal('signup');
+    return;
+  }
+  document.getElementById('fileInput').click();
+}
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+['dragenter','dragover'].forEach(evt=>{
+  dropZone.addEventListener(evt, e=>{e.preventDefault(); dropZone.classList.add('dragover');});
+});
+['dragleave','drop'].forEach(evt=>{
+  dropZone.addEventListener(evt, e=>{e.preventDefault(); dropZone.classList.remove('dragover');});
+});
+dropZone.addEventListener('drop', e=>{
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e=> handleFiles(e.target.files));
+
+function handleFiles(files){
+  [...files].forEach(file=>{
+    if(!file.type.startsWith('image/')) return;
+    const id = 'item-' + (itemCounter++);
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const item = {id, file, dataUrl: e.target.result, base64: e.target.result.split(',')[1], mediaType: file.type, status:'ready'};
+      queueItems.unshift(item);
+      renderQueue();
+      document.getElementById('queue').scrollIntoView({behavior:'smooth', block:'nearest'});
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderQueue(){
+  const queue = document.getElementById('queue');
+  queue.innerHTML = '';
+  queueItems.forEach((item, idx)=>{
+    const tilt = (idx % 2 === 0) ? '-0.7deg' : '0.6deg';
+    const card = document.createElement('div');
+    card.className = 'tag';
+    card.style.setProperty('--tilt', tilt);
+    let statusHtml, btnHtml;
+    if(item.status === 'ready'){
+      statusHtml = 'Ready';
+      btnHtml = `<button class="mini-btn" onclick="appraiseItem('${item.id}')">Appraise &rarr;</button>`;
+    } else if(item.status === 'loading'){
+      statusHtml = '<span class="spinner"></span>Searching listings';
+      btnHtml = `<button class="mini-btn" disabled>Working&hellip;</button>`;
+    } else if(item.status === 'done'){
+      statusHtml = 'Done';
+      btnHtml = `<button class="mini-btn" onclick="document.getElementById('result-${item.id}').scrollIntoView({behavior:'smooth', block:'center'})">View result</button>`;
+    } else if(item.status === 'error'){
+      statusHtml = 'Failed';
+      btnHtml = `<button class="mini-btn" onclick="appraiseItem('${item.id}')">Retry</button>`;
+    }
+    card.innerHTML = `
+      <button class="mini-remove" onclick="removeItem('${item.id}')">&times;</button>
+      <img class="thumb" src="${item.dataUrl}">
+      <div class="filename">${item.file.name}</div>
+      <div class="status-row">
+        <span class="status">${statusHtml}</span>
+        ${btnHtml}
+      </div>
+    `;
+    queue.appendChild(card);
+  });
+}
+
+function removeItem(id){
+  queueItems = queueItems.filter(i=>i.id!==id);
+  renderQueue();
+}
+
+async function appraiseItem(id){
+  const item = queueItems.find(i=>i.id===id);
+  if(!item) return;
+
+  if(!currentUser){
+    openAuthModal('signup');
+    return;
+  }
+
+  if(scanBalance !== -1 && scanBalance <= 0){
+    renderQueue();
+    document.getElementById('pricing').scrollIntoView({behavior:'smooth'});
+    flashPunchcard();
+    return;
+  }
+
+  item.status = 'loading';
+  renderQueue();
+
+  try{
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const response = await fetch('/api/appraise', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token
+      },
+      body: JSON.stringify({ base64: item.base64, mediaType: item.mediaType })
+    });
+
+    const data = await response.json();
+
+    if(!response.ok || data.error){
+      throw new Error(data.error || 'Appraisal failed.');
+    }
+
+    item.status = 'done';
+    item.result = data.result;
+    scanBalance = data.scan_balance;
+    renderPunchcard();
+    renderQueue();
+    renderResult(item);
+    document.getElementById('result-'+item.id).scrollIntoView({behavior:'smooth', block:'start'});
+
+  }catch(err){
+    console.error('Appraisal error:', err);
+    item.status = 'error';
+    item.errorMsg = err.message && err.message !== 'Failed to fetch'
+      ? err.message
+      : "Couldn't read this photo clearly. Try a well-lit, single-item shot and retry.";
+    renderQueue();
+    renderResult(item);
+    document.getElementById('result-'+item.id).scrollIntoView({behavior:'smooth', block:'start'});
+  }
+}
+
+function renderResult(item){
+  const section = document.getElementById('resultsSection');
+  section.style.display = 'block';
+  const grid = document.getElementById('resultGrid');
+
+  let existing = document.getElementById('result-'+item.id);
+  if(existing) existing.remove();
+
+  const card = document.createElement('div');
+  card.className = 'result-tag';
+  card.id = 'result-'+item.id;
+
+  if(item.status === 'error'){
+    card.innerHTML = `
+      <div class="result-head">
+        <img src="${item.dataUrl}">
+        <div class="rh-text">
+          <h3>${item.file.name}</h3>
+        </div>
+      </div>
+      <div class="section-block">
+        <div class="error-box">${item.errorMsg}</div>
+      </div>
+    `;
+    grid.prepend(card);
+    return;
+  }
+
+  const r = item.result;
+  const sortedMk = [...(r.marketplaces||[])].sort((a,b)=>b.estimated_net - a.estimated_net);
+  const compRows = (r.comps||[]).length
+    ? r.comps.map(c=>`
+      <a class="comp-row" href="${c.url}" target="_blank" rel="noopener noreferrer">
+        <span class="comp-plat">${c.platform}</span>
+        <span class="comp-title">${c.title}</span>
+        <span class="comp-status ${ (c.status||'').toLowerCase().includes('active') ? 'active':'' }">${c.status||''}</span>
+        <span class="comp-price">$${c.price}</span>
+      </a>
+    `).join('')
+    : `<div class="comps-empty">No close comparable listings turned up in search &mdash; pricing below is a conservative estimate.</div>`;
+
+  const mkRows = sortedMk.map(m=>{
+    const isBest = m.name === r.best_platform || m.name === sortedMk[0].name;
+    return `
+    <div class="mk-row${isBest?' best':''}">
+      ${isBest?'<span class="best-flag">Best net</span>':''}
+      <div class="mk-name">${m.name}</div>
+      <div class="mk-price">$${m.estimated_sale_price}</div>
+      <div class="mk-reason">${m.fit_reason}</div>
+      <div class="mk-net">net ~$${m.estimated_net} (&minus;${m.typical_fee_pct}% fee)</div>
+    </div>
+  `;}).join('');
+
+  const riskItems = (r.risks||[]).map(risk=>`<li>${risk}</li>`).join('');
+
+  card.innerHTML = `
+    <div class="result-head">
+      <img src="${item.dataUrl}">
+      <div class="rh-text">
+        <h3>${r.item_type}</h3>
+        <div class="brand">${r.brand_guess}</div>
+        <span class="cond">${r.condition}</span>
+      </div>
+    </div>
+    <div class="value-block">
+      <div class="vlabel">Estimated value</div>
+      <div class="vrange">$${r.value_low}&ndash;$${r.value_high}</div>
+      <div class="vsuggest">List around $${r.recommended_list_price}</div>
+      <div class="confidence ${ (r.confidence||'Medium').toLowerCase() }">${r.confidence||'Medium'} confidence</div>
+    </div>
+    <div class="pricing-basis">${r.pricing_basis || ''}</div>
+    <div class="section-block">
+      <h4>Condition notes</h4>
+      <p style="margin:0;font-size:13px;color:var(--text-ink);">${r.condition_notes}</p>
+    </div>
+    <div class="section-block">
+      <h4>Similar listings we found</h4>
+      <div class="comps-list">${compRows}</div>
+    </div>
+    <div class="section-block">
+      <h4>Where to sell it, and what it'd go for</h4>
+      <div class="marketplaces">${mkRows}</div>
+    </div>
+    <div class="section-block">
+      <h4>Check before you sell</h4>
+      <ul class="risk-list">${riskItems}</ul>
+    </div>
+    <div class="section-block">
+      <h4>Instant offer vs. listing it yourself</h4>
+      <div class="deal-box">
+        <div class="deal-row"><span>Instant buyback offer</span><span class="dv">~$${r.deal_comparison.instant_offer_estimate}</span></div>
+        <div class="deal-row"><span>Listing it yourself (net)</span><span class="dv">~$${r.deal_comparison.marketplace_net_estimate}</span></div>
+        <div class="deal-verdict">${r.deal_comparison.verdict}</div>
+      </div>
+    </div>
+  `;
+  grid.prepend(card);
+}
+</script>
+
+</body>
+</html>
